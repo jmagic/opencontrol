@@ -1,0 +1,4 @@
+virt_env/
+*.pyc
+zenav/static/
+zenav/db.sqlite3

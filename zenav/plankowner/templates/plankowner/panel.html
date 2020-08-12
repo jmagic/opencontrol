@@ -1,0 +1,236 @@
+
+{% load static %}
+
+
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+
+<link rel="stylesheet" type="text/css" href="{% static 'plankowner/base.css' %}">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reconnecting-websocket/1.0.0/reconnecting-websocket.min.js" integrity="sha512-B4skI5FiLurS86aioJx9VfozI1wjqrn6aTdJH+YQUmCZum/ZibPBTX55k5d9XM6EsKePDInkLVrN7vPmJxc1qA==" crossorigin="anonymous"></script>
+<script  src="https://code.jquery.com/jquery-3.3.1.min.js"
+  integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+  crossorigin="anonymous"></script>
+
+<body>
+<div class="container">
+<div class=useralert>
+  <div class='row'>
+    <div class="alert-box success">Successful Alert !!!</div>
+    <div class="alert-box failure">Failure Alert !!!</div>
+    <div class="alert-box warning">Warning Alert !!!</div>
+  </div>
+</div>
+    {% for button in buttons %}
+        <div class="round_button" id={{button}}>
+            <div class="item" id="text_{{button}}"></div>
+        </div>
+    {% endfor %}
+         
+
+</div>
+</body>
+
+
+
+<script>
+
+$( document ).ready(function() {
+
+
+    //{'buttons': ['one', 'two', 'three', 'four', 'five', 'six'],
+    // 'button_names': ['Lights', 'HDMI', 'VGA', 'DVI', 'RCA', 'Stereo'],
+    // 'button_ids': [7, 9, 10, 11, 12, 13],
+    // 'devices': [25, 26, 26, 26, 26, 26],
+    // 'drivers': [25, 26, 26, 26, 26, 26]}
+
+
+    var off_color = "264653"
+    var on_color = "2A9D8F"
+    var error_color = "E76F51"
+    var start_color = "e5e5e5"
+    var buttons = {{buttons|safe}};
+    var button_names = {{button_names|safe}};
+    var button_ids = {{button_ids|safe}};
+    var button_states = [];
+    var devices = {{devices|safe}}
+    var drivers = {{drivers|safe}}
+
+
+    // Set all buttons to error until we get status
+    // $(".round_button").css("background-color", start_color);
+    {% for button in buttons %}
+        $("#text_{{button}}").html("Offline");
+        button_states.push(false);
+    {% endfor %}
+
+
+    let socket = new ReconnectingWebSocket('ws://'
+        + window.location.host
+        + '/ws/multi/'
+        );
+
+    socket.onopen = function(e) {
+        console.log("[open] Connection established");
+        show_success("Connected to Server")
+        // console.log("Sending to server");
+        //Subscribe and get currentstate of buttons
+        for (var i = button_ids.length - 1; i >= 0; i--) {
+            socket.send(format_data('talentstream', "subscribe_instance", button_ids[i]));
+            socket.send(format_data('talentstream', "retrieve", button_ids[i]));
+        }
+        //Subscribe and get current state of devices
+        for (var i = devices.length - 1; i >= 0; i--) {
+            socket.send(format_data('devicestream', "subscribe_instance", devices[i]));
+            socket.send(format_data('devicestream', "retrieve", devices[i]));
+        }
+        //Subscribe and get current state of drivers
+        for (var i = drivers.length - 1; i >= 0; i--) {
+            socket.send(format_data('driverstream', "subscribe_instance", drivers[i]));
+            socket.send(format_data('driverstream', "retrieve", drivers[i]));
+        }
+        
+    };
+
+
+    //{"errors": [], "data": {"name": "Lights", "set_on": false, "set_off": false, "state": false, "id": 7, "device": 25}, "action": "retrieve", "response_status": 200, "request_id": 42}
+    socket.onmessage = function(event) {
+        // console.log(`[message] Data received from server: ${event.data}`);
+        const all_data = JSON.parse(event.data);
+        if (all_data.stream == "talentstream"){
+          data = all_data.payload;
+          if (data['errors'].length > 0) {
+            alert(data['errors']);
+          }
+          if (data.data == null){
+            return;
+          }
+
+          if ('state' in data.data){
+
+                // Need to figure out which id first
+                
+                // console.log(data.data.state);
+                var idx = button_ids.indexOf(data.data.id);
+                //Set correct button state
+                button_states[idx] = data.data.state;
+                //Update bg color
+                //Update text
+
+                // current_state = data.data.state;
+                if (data.data.state) {
+                    $("#" + buttons[idx]).addClass("button_on")
+                    $("#" + buttons[idx]).removeClass("button_off")
+                    // $("#text_" + buttons[idx]).attr("on", true);
+
+                    $("#text_" + buttons[idx]).html(button_names[idx]);
+                } else {
+                    $("#" + buttons[idx]).addClass("button_off")
+                    $("#" + buttons[idx]).removeClass("button_on")
+                    // $("#" + buttons[idx]).css("background-color", off_color);
+                    // $("#text_" + buttons[idx]).attr("on", false);
+                    $("#text_" + buttons[idx]).html(button_names[idx]);
+                }
+            } else {
+          // console.log(data);
+            };
+        };
+        if (all_data.stream == "devicestream"){
+            data = all_data.payload;
+            //console.log(data)
+            if (data.data == null){
+                return;
+            }
+            for (i = 0; i < devices.length; i++){
+                if (devices[i] == data.data.id){
+                    if (data.data.is_online){
+                        // console.log("device is online: " + devices[i] + " " + button_names[i]);
+                        $("#" + buttons[i]).removeClass("button_error");
+                        } else {
+                        // console.log("device is offline: " + devices[i] + " " + button_names[i]);
+                        $("#" + buttons[i]).addClass("button_error");
+                    }
+                }
+            };  
+        }
+        if (all_data.stream == "driverstream"){
+            data = all_data.payload;
+            // console.log(data)
+            if (data.data == null){
+                return;
+            }
+            for (i = 0; i < drivers.length; i++){
+                if (drivers[i] == data.data.id){
+                    if (data.data.is_online){
+                        // console.log("driver is online: " + drivers[i] + " " + button_names[i]);
+                        $("#" + buttons[i]).removeClass("button_error");
+                        } else {
+                        // console.log("driver is offline: " + drivers[i] + " " + button_names[i]);
+                        $("#" + buttons[i]).addClass("button_error");
+                    }
+                }
+            }; 
+        };
+    };
+    socket.onclose = function(event) {
+        show_warning('Disconnected from server')
+        $(".round_button").addClass("button_error")
+        if (event.wasClean) {
+            console.log(`[close] Connection closed cleanly, code=${event.code} reason=${event.reason}`);
+        } else {
+            // e.g. server process killed or network down
+            // event.code is usually 1006 in this case
+            console.log('[close] Connection died');
+        }
+    };
+
+    socket.onerror = function(error) {
+        console.log(`[error] ${error.message}`);
+    };
+
+
+
+    $(".round_button").click(function() {
+        var button_name = $(this).attr("id");
+        //one?
+        var idx = buttons.indexOf(button_name)
+        button_states[idx] = !button_states[idx]
+        // current_state = !current_state;
+
+        // console.log('Setting state: ' + current_state);
+
+        if (button_states[idx]){
+            // console.log('Sending for ' + button_names[idx])
+            socket.send(format_patch_data('talentstream', 'patch', {"set_on": true}, button_ids[idx]));   
+        } else {
+            // console.log('Sending for ' + button_names[idx])
+            socket.send(format_patch_data('talentstream', 'patch', {"set_off": true}, button_ids[idx])); 
+        };
+
+        
+    });
+        
+
+    });
+
+function format_patch_data(stream, action, data, pk){
+    return JSON.stringify({'stream': stream, 'payload': {"action": action, "request_id": 42, 'data': data, "pk": pk}});
+}
+
+function format_data(stream, action, pk){
+    // action retrieve subscribe
+    return JSON.stringify({'stream': stream, 'payload': {"action": action, "request_id": 42, 'data': [], "pk": pk}});
+};
+
+function show_success(message){
+    $("div.success").html(message);
+    $("div.success").fadeIn( 300 ).delay( 1500 ).fadeOut( 400 );
+};
+
+function show_warning(message){
+    $("div.warning").html(message);
+    $("div.warning").fadeIn( 300 ).delay( 1500 ).fadeOut( 400 );
+};
+</script>
