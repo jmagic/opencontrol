@@ -30,6 +30,7 @@ class TokenAuthMiddlewareInstance:
     Yeah, this is black magic:
     https://github.com/django/channels/issues/1399
     """
+
     def __init__(self, scope, middleware):
         self.middleware = middleware
         self.scope = dict(scope)
@@ -43,4 +44,5 @@ class TokenAuthMiddlewareInstance:
         return await inner(receive, send)
 
 
-TokenAuthMiddlewareStack = lambda inner: TokenAuthMiddleware(AuthMiddlewareStack(inner))
+def TokenAuthMiddlewareStack(inner):
+    return TokenAuthMiddleware(AuthMiddlewareStack(inner))

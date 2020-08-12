@@ -26,7 +26,6 @@ def view_panel(request, pk):
     return render(request, 'plankowner/panel.html', context)
 
 
-
 # class PanelView(TemplateView):
 #     template_name = "plankowner/panel.html"
 

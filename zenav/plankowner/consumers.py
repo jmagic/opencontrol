@@ -1,6 +1,6 @@
-import json
-from channels.generic.websocket import WebsocketConsumer
-from django.contrib.auth import get_user_model
+# import json
+# from channels.generic.websocket import WebsocketConsumer
+# from django.contrib.auth import get_user_model
 from .models import Device, Driver, Talent
 
 from djangochannelsrestframework import permissions

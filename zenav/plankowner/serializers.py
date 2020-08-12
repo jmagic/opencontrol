@@ -27,4 +27,3 @@ class TalentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Talent
         fields = ['name', 'set_on', 'set_off', 'state', 'id', 'device']
-
