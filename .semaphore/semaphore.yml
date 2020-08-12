@@ -37,4 +37,5 @@ blocks:
             - python manage.py check --deploy
         - name: Style check
           commands:
+            - pip install flake8
             - flake8 zenav/ --max-line-length=127
