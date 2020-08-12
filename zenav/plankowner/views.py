@@ -14,7 +14,7 @@ from .models import PanelStyle
 def view_panel(request, pk):
     my_panel = PanelStyle.objects.filter(id=pk).first()
     button_names = ['one', 'two', 'three', 'four', 'five', 'six']
-    print(my_panel.talents.all())
+    # print(my_panel.talents.all())
     context = {'buttons': [], 'button_names': [], 'button_ids': [], 'devices': [], 'drivers': []}
     for i, talent in enumerate(my_panel.talents.all()):
         context['buttons'].append(button_names[i])
@@ -22,7 +22,7 @@ def view_panel(request, pk):
         context['button_ids'].append(talent.pk)
         context['devices'].append(talent.device.pk)
         context['drivers'].append(talent.device.driver.pk)
-    print(context)
+    # print(context)
     return render(request, 'plankowner/panel.html', context)
 
 
